@@ -72,8 +72,8 @@ class oa_social_login
                 {
                     $oa_social_login_providers = explode(",", $config['oa_social_login_providers']);
 
-                    // HTTP / HTTPS
-                    $server_protocol = (!empty($config['server_protocol'])) ? (str_replace('://', '', $config['server_protocol'])) : ($config['cookie_secure'] ? 'https' : 'http');
+                    // OneAll endpoints are served over HTTPS only; always use a secure protocol.
+                    $server_protocol = 'https';
 
                     // Set Placeholders
                     $template->assign_var('OA_SOCIAL_LOGIN_CALLBACK_URI', oa_social_login::get_current_url());
@@ -87,7 +87,7 @@ class oa_social_login
                     // $template->assign_var ('OA_SOCIAL_LOGIN_CSS_THEME', ($server_protocol == "https" ? "https://secure." : "http://public.") . 'oneallcdn.com/css/api/socialize/themes/phpbb/small.css');
 
                     // User must be logged in and not a bot
-                    if (is_object($user) && empty($user->data['isbot']) && (!empty($user->data['user_id']) && $user->data['user_id'] != ANONYMOUS))
+                    if (is_object($user) && empty($user->data['is_bot']) && (!empty($user->data['user_id']) && $user->data['user_id'] != ANONYMOUS))
                     {
                         // Only display this in the UCP
                         if (!empty($user->page['page_name']) && strpos($user->page['page_name'], 'ucp') !== false)
@@ -299,10 +299,9 @@ class oa_social_login
                 {
                     // API Settings
                     $api_connection_handler = ((!empty($config['oa_social_login_api_connection_handler']) && $config['oa_social_login_api_connection_handler'] == 'fsockopen') ? 'fsockopen' : 'curl');
-                    $api_connection_use_https = ((!empty($config['oa_social_login_api_connection_port']) && $config['oa_social_login_api_connection_port'] == '80') ? false : true);
 
-                    // API Resource
-                    $api_connection_url = ($api_connection_use_https ? 'https' : 'http') . '://' . $config['oa_social_login_api_subdomain'] . '.api.oneall.com/connections/' . $connection_token . '.json';
+                    // OneAll requires HTTPS for all API calls.
+                    $api_connection_url = 'https://' . $config['oa_social_login_api_subdomain'] . '.api.oneall.com/connections/' . $connection_token . '.json';
 
                     // API Credentials
                     $api_credentials = array();
@@ -1839,8 +1838,8 @@ class oa_social_login
         curl_setopt($curl, CURLOPT_REFERER, $url);
         curl_setopt($curl, CURLOPT_VERBOSE, 0);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 0);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, 1);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, 2);
         curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 0);
         curl_setopt($curl, CURLOPT_USERAGENT, self::USER_AGENT);
 
@@ -1872,8 +1871,13 @@ class oa_social_login
                     $header_found = false;
 
                     // Loop through headers.
-                    while (!$header_found && (list(, $header) = each($result->http_headers)))
+                    foreach ($result->http_headers as $header)
                     {
+                        if ($header_found)
+                        {
+                            break;
+                        }
+
                         // Try to parse a redirection header.
                         if (preg_match("/(Location:|URI:)[^(\n)]*/i", $header, $matches))
                         {
@@ -2013,8 +2017,13 @@ class oa_social_login
                 $header_found = false;
 
                 // Loop through headers
-                while (!$header_found && (list(, $header) = each($result->http_headers)))
+                foreach ($result->http_headers as $header)
                 {
+                    if ($header_found)
+                    {
+                        break;
+                    }
+
                     // Check for location header
                     if (preg_match("/(Location:|URI:)[^(\n)]*/i", $header, $matches))
                     {

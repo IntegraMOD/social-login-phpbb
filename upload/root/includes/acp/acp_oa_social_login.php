@@ -268,7 +268,7 @@ class acp_oa_social_login
 		{
 			//Check the handler
 			$api_connection_handler = ($api_connection_handler == 'fsockopen' ? 'fsockopen' : 'curl');
-			$api_connection_use_https = ($api_connection_port == 443 ? true : false);
+			$api_connection_use_https = true;
 
 			//FSOCKOPEN
 			if ($api_connection_handler == 'fsockopen')
@@ -305,7 +305,7 @@ class acp_oa_social_login
 				{
 					// Construct full API Domain.
 					$api_domain = $api_subdomain . '.api.oneall.com';
-					$api_resource_url = ($api_connection_use_https ? 'https' : 'http') . '://' . $api_domain . '/tools/ping.json';
+					$api_resource_url = 'https://' . $api_domain . '/tools/ping.json';
 
 					// Try to establish a connection.
 					$result = oa_social_login::do_api_request($api_connection_handler, $api_resource_url, array(
